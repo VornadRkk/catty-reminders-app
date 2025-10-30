@@ -66,7 +66,7 @@ def custom_openapi():
     """
 
   openapi_schema = get_openapi(
-    title="Catty: The Reminders App",
+    title="CattSASHAy: The Reminders App",
     version="1.0.0",
     description=description,
     routes=app.routes,
