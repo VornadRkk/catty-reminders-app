@@ -35,6 +35,5 @@ jobs:
       with:
         name: coverage-report
         path: htmlcov/
-      with:
         name: coverage-report
         path: htmlcov/
