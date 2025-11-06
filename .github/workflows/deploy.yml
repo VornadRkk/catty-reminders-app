@@ -1,49 +1,40 @@
-name: CD Deploy to Lab2
+name: CD - Deploy Application
 
 on:
   release:
-    types: [published]
+    types: [published] # Запуск только при публикации нового релиза
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
+    # Шаг 1: Получение кода из репозитория
     - name: Checkout code
       uses: actions/checkout@v4
 
+    # Шаг 2: Сборка/проверка на GitHub Runner
     - name: Set up Python 3.12
       uses: actions/setup-python@v4
       with:
         python-version: '3.12'
-
-    - name: Install dependencies for build
+    
+    - name: Install dependencies (Build check)
       run: |
         python -m pip install --upgrade pip
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
-    - name: Copy files to server
-      uses: appleboy/scp-action@v1
-      with:
-        host: ${{ secrets.PROXY }}
-        username: ${{ secrets.USERNAME }}
-        key: ${{ secrets.SSH_PRIVATE_KEY }}
-        port: ${{ secrets.SSH_PORT }}
-        source: "requirements.txt,app.py,*.py"  # Адаптируйте под файлы app
-        target: "/home/${{ secrets.USERNAME }}/catty-reminders-app/"
-
-    - name: Deploy and restart app
-      uses: appleboy/ssh-action@v1
+    # Шаг 3: Развертывание на сервере
+    # Этот шаг подключается к вашему серверу и запускает скрипт deploy.sh,
+    # полностью повторяя логику вашего старого webhook-сервера.
+    - name: Run deployment script on server
+      uses: appleboy/ssh-action@v1.0.3
       with:
         host: ${{ secrets.PROXY }}
         username: ${{ secrets.USERNAME }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         port: ${{ secrets.SSH_PORT }}
         script: |
-          cd /home/${{ secrets.USERNAME }}/catty-reminders-app/
-          git pull origin main || echo "Pull skipped"
-          pip install -r requirements.txt --user
-          sudo systemctl restart catty-reminders-app || pkill -f catty-reminders && nohup python app.py > app.log 2>&1 &
-          echo "Deploy completed"
-          sudo systemctl restart catty-reminders-app || pkill -f catty-reminders && nohup python app.py > app.log 2>&1 &
-          echo "Deploy completed"
+          echo "Starting deployment..."
+          /bin/bash /home/vboxuser/deploy.sh
+          echo "Deployment script finished."
