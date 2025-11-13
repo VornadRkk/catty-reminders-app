@@ -1,7 +1,7 @@
 # Название CI воркфлоу
-name: Run Python Tests
+name: CI - Test and Validate Application
 
-# Запускать при push в любую ветку или при создании/обновлении Pull Request
+# Запускать при push или pull request в любую ветку
 on:
   push:
     branches: [ "**" ]
@@ -9,31 +9,60 @@ on:
     branches: [ "**" ]
 
 jobs:
+  # Задача для запуска всех типов тестов
   test:
-    # Запускать на последней версии Ubuntu
     runs-on: ubuntu-latest
 
     steps:
-    # 1. Клонируем код репозитория
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      # 1. Клонируем код репозитория
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    # 2. Устанавливаем Python (укажите вашу версию)
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.11'
+      # 2. Устанавливаем Python (рекомендуется использовать актуальную версию)
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
 
-    # 3. Устанавливаем зависимости
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-    
-    # 4. Запускаем тесты (С ИСПРАВЛЕНИЕМ)
-    - name: Run tests with pytest
-      # Добавляем корневую папку проекта в PYTHONPATH
-      env:
-        PYTHONPATH: .
-      run: |
-        pytest
+      # 3. Устанавливаем зависимости
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          # Устанавливаем зависимости из файла
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          fi
+          # Устанавливаем зависимости, нужные для тестов (если их нет в requirements)
+          pip install pytest pytest-asyncio httpx uvicorn
+
+      # 4. Запускаем юнит-тесты
+      # Они не требуют запущенного сервера и проверяют логику изолированно.
+      - name: Run unit tests
+        env:
+          PYTHONPATH: .
+        run: |
+          # Предполагается, что юнит-тесты находятся в файле test_unit.py
+          pytest tests/test_unit.py -v
+
+      # 5. Запускаем API/интеграционные тесты
+      # Этот шаг сначала поднимает сервер, а потом запускает тесты.
+      - name: Run API tests
+        env:
+          PYTHONPATH: .
+        run: |
+          echo "Starting server for API tests..."
+          # Запускаем веб-сервер uvicorn в фоновом режиме
+          uvicorn app.main:app --host 0.0.0.0 --port 8181 &
+          APP_PID=$!
+          
+          # Ждем несколько секунд, чтобы сервер успел запуститься
+          sleep 5
+
+          echo "Running API tests..."
+          # Запускаем тесты, которые обращаются к запущенному приложению
+          # Предполагается, что они в файле test_api.py
+          pytest tests/test_api.py -v
+
+          echo "Stopping server..."
+          # Останавливаем сервер после тестов, чтобы шаг завершился
+          kill $APP_PID
