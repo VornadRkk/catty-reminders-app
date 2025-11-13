@@ -13,9 +13,9 @@ jobs:
         uses: appleboy/ssh-action@v1.0.3
         with:
           # Параметры для SSH-подключения (из ваших секретов)
-          host: ${{ secrets.PROXY }}
-          port: ${{ secrets.SSH_PORT }}
-          username: ${{ secrets.USERNAME }}
+          host: course.prafdin.ru
+          port: 2424
+          username: sasha
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           
           # Скрипт, который будет выполнен на вашем сервере
