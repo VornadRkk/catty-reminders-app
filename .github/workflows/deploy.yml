@@ -42,4 +42,4 @@ jobs:
             nohup python -m uvicorn app.main:app --host 0.0.0.0 --port 8181 > app.log 2>&1 &
 
             echo "Deployment finished successfully!"
-            echo "App should be available at http://app.prafdin.course.prafdin.ru"
+            echo "App should be available at http://app.volkov.course.prafdin.ru"
