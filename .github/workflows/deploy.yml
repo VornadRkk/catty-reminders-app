@@ -9,38 +9,52 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Deploy Application to Server
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          # Параметры для SSH-подключения (из ваших секретов)
-          host: course.prafdin.ru
-          port: 2424
-          username: vboxuser
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          debug: true
-          
-          # Скрипт, который будет выполнен на вашем сервере
-          script: |
-            # Переходим в директорию с проектом
-            # Убедитесь, что вы уже клонировали проект в эту папку хотя бы один раз
-            cd /home/vboxuser/catty-reminders-app
+    - name: Checkout code
+      uses: actions/checkout@v4
 
-            echo "Pulling latest code from repository..."
-            # Скачиваем последние изменения из ветки 'main'
-            git pull origin main
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
 
-            echo "Installing/updating dependencies..."
-            # Устанавливаем зависимости Python
-            pip install -r requirements.txt
+    - name: Install dependencies (for lint/tests if needed)
+      run: |
+        python -m pip install --upgrade pip
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
-            echo "Restarting the application..."
-            # Убиваем старый процесс приложения (если он запущен)
-            # Флаг -f ищет 'app.main' в полной команде процесса
-            pkill -f "app.main" || true
+    - name: Deploy to VM
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: course.prafdin.ru             # или ${{ secrets.PROXY }}
+        port: 2424                         # или ${{ secrets.SSH_PORT }}
+        username: vboxuser                 # или ${{ secrets.USERNAME }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        debug: true                       # для подробного лога SSH соединения
+        script: |
+          echo "Starting deployment..."
 
-            # Запускаем приложение заново в фоновом режиме
-            # и сохраняем его вывод в лог-файл
-            nohup python -m uvicorn app.main:app --host 0.0.0.0 --port 8181 > app.log 2>&1 &
+          cd /home/vboxuser/catty-reminders-app
 
-            echo "Deployment finished successfully!"
-            echo "App should be available at http://app.volkov.course.prafdin.ru"
+          echo "Pulling latest code from repository..."
+          git pull origin lab2
+
+          echo "Stopping old process (if running)..."
+          pkill -f "uvicorn app.main:app" || true
+
+          echo "Creating virtual environment if not exists..."
+          if [ ! -d "venv" ]; then
+            python3 -m venv venv
+          fi
+
+          echo "Activating virtual environment..."
+          source venv/bin/activate
+
+          echo "Upgrading pip and installing dependencies..."
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+          echo "Starting application..."
+          nohup python -m uvicorn app.main:app --host 0.0.0.0 --port 8181 > app.log 2>&1 &
+
+          echo "Deployment finished successfully!"
+          echo "App should be available at http://app.volkov.course.prafdin.ru"
