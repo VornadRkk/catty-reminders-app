@@ -11,53 +11,22 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-
-    - name: Setup Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.12'
-
-    - name: Install dependencies (for lint/tests if needed)
-      run: |
-        python -m pip install --upgrade pip
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-
-    - name: Deploy to VM
+    - name: Deploy to VM via SSH and restart systemd service
       uses: appleboy/ssh-action@v1.0.3
-      continue-on-error: true            
+      continue-on-error: true
       with:
         host: course.prafdin.ru
         port: 2424
         username: vboxuser
         key: ${{ secrets.SSH_PRIVATE_KEY }}
-        debug: true
-        timeout: 120s                    
-        command_timeout: 60s              
         script: |
           cd /home/vboxuser/catty-reminders-app
-          git pull origin lab2 || true    
-          set +e                        
-          pkill -f "uvicorn app.main:app"
-          set -e                      
-          WAIT_COUNT=0
-          while pgrep -f "uvicorn app.main:app" >/dev/null && [ $WAIT_COUNT -lt 10 ]; do
-              echo "Waiting for old process to terminate..."
-              sleep 1
-              WAIT_COUNT=$((WAIT_COUNT + 1))
-          done
-          set +e
-          if pgrep -f "uvicorn app.main:app" >/dev/null; then
-              echo "Force killing the process..."
-              pkill -9 -f "uvicorn app.main:app"
-              sleep 1
-          fi
-          set -e
+          git pull origin lab2 || true
           if [ ! -d "venv" ]; then
             python3 -m venv venv
           fi
           source venv/bin/activate
           pip install --upgrade pip
           pip install -r requirements.txt
-          nohup python -m uvicorn app.main:app --host 0.0.0.0 --port 8181 > app.log 2>&1 &
-          sleep 2
-
+          sudo systemctl restart catty-reminders.service
+          sudo systemctl status catty-reminders.service --no-pager
