@@ -17,6 +17,7 @@ jobs:
           port: 2424
           username: vboxuser
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          debug: true
           
           # Скрипт, который будет выполнен на вашем сервере
           script: |
