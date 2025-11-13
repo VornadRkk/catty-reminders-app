@@ -29,5 +29,5 @@ jobs:
           source venv/bin/activate
           pip install --upgrade pip
           pip install -r requirements.txt
-          echo "123" | sudo -S systemctl restart catty-reminders.service
-          echo "123" | sudo -S systemctl status catty-reminders.service --no-pager
+          systemctl restart catty-reminders.service
+          systemctl status catty-reminders.service --no-pager
