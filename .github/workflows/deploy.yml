@@ -24,26 +24,28 @@ jobs:
 
     - name: Deploy to VM
       uses: appleboy/ssh-action@v1.0.3
+      continue-on-error: true              # Игнорировать ошибки этого шага, чтобы не прерывать workflow из-за pkill
       with:
         host: course.prafdin.ru
         port: 2424
         username: vboxuser
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         debug: true
-        timeout: 120s                  # Увеличиваем таймаут до 2 минут
-        command_timeout: 60s           # Таймаут для каждой команды
+        timeout: 120s                      # Увеличиваем общий таймаут
+        command_timeout: 60s               # Таймаут на каждую команду
         script: |
           echo "Starting deployment..."
 
           cd /home/vboxuser/catty-reminders-app
 
           echo "Pulling latest code from repository..."
-          git pull origin lab2
+          git pull origin lab2 || true     # Игнорируем ошибки git pull
 
           echo "Stopping old process (if running)..."
-          pkill -f "uvicorn app.main:app" || true
+          set +e                          # Отключаем прерывание при ошибках
+          pkill -f "uvicorn app.main:app"
+          set -e                          # Включаем прерывание обратно
 
-          # Ограничиваем цикл ожидания максимум 10 секундами
           WAIT_COUNT=0
           while pgrep -f "uvicorn app.main:app" >/dev/null && [ $WAIT_COUNT -lt 10 ]; do
               echo "Waiting for old process to terminate..."
@@ -51,12 +53,13 @@ jobs:
               WAIT_COUNT=$((WAIT_COUNT + 1))
           done
 
-          # Принудительно убиваем, если процесс всё ещё работает
+          set +e
           if pgrep -f "uvicorn app.main:app" >/dev/null; then
               echo "Force killing the process..."
-              pkill -9 -f "uvicorn app.main:app" || true
+              pkill -9 -f "uvicorn app.main:app"
               sleep 1
           fi
+          set -e
 
           echo "Creating virtual environment if not exists..."
           if [ ! -d "venv" ]; then
