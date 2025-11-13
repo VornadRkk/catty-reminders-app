@@ -11,7 +11,8 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-    - name: Deploy to VM via SSH and restart systemd service
+
+    - name: Deploy to VM via SSH and restart systemd service with password
       uses: appleboy/ssh-action@v1.0.3
       continue-on-error: true
       with:
@@ -28,5 +29,5 @@ jobs:
           source venv/bin/activate
           pip install --upgrade pip
           pip install -r requirements.txt
-          sudo systemctl restart catty-reminders.service
-          sudo systemctl status catty-reminders.service --no-pager
+          echo "123" | sudo -S systemctl restart catty-reminders.service
+          echo "123" | sudo -S systemctl status catty-reminders.service --no-pager
