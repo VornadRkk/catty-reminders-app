@@ -24,27 +24,27 @@ jobs:
 
     - name: Deploy to VM
       uses: appleboy/ssh-action@v1.0.3
-      continue-on-error: true              # Игнорировать ошибки этого шага, чтобы не прерывать workflow из-за pkill
+      continue-on-error: true            
       with:
         host: course.prafdin.ru
         port: 2424
         username: vboxuser
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         debug: true
-        timeout: 120s                      # Увеличиваем общий таймаут
-        command_timeout: 60s               # Таймаут на каждую команду
+        timeout: 120s                    
+        command_timeout: 60s              
         script: |
           echo "Starting deployment..."
 
           cd /home/vboxuser/catty-reminders-app
 
           echo "Pulling latest code from repository..."
-          git pull origin lab2 || true     # Игнорируем ошибки git pull
+          git pull origin lab2 || true    
 
           echo "Stopping old process (if running)..."
-          set +e                          # Отключаем прерывание при ошибках
+          set +e                        
           pkill -f "uvicorn app.main:app"
-          set -e                          # Включаем прерывание обратно
+          set -e                      
 
           WAIT_COUNT=0
           while pgrep -f "uvicorn app.main:app" >/dev/null && [ $WAIT_COUNT -lt 10 ]; do
