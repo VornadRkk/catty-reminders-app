@@ -20,6 +20,7 @@ jobs:
         port: 2424
         username: vboxuser
         key: ${{ secrets.SSH_PRIVATE_KEY }}
+        tty: false
         script: |
           cd /home/vboxuser/catty-reminders-app
           git pull origin lab2 || true
