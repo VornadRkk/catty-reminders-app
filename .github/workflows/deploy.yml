@@ -25,11 +25,11 @@ jobs:
     - name: Deploy to VM
       uses: appleboy/ssh-action@v1.0.3
       with:
-        host: course.prafdin.ru             # или ${{ secrets.PROXY }}
-        port: 2424                         # или ${{ secrets.SSH_PORT }}
-        username: vboxuser                 # или ${{ secrets.USERNAME }}
+        host: course.prafdin.ru            # или ${{ secrets.PROXY }}
+        port: 2424                       # или ${{ secrets.SSH_PORT }}
+        username: vboxuser               # или ${{ secrets.USERNAME }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
-        debug: true                       # для подробного лога SSH соединения
+        debug: true                     # Включить debug логи в SSH для диагностики
         script: |
           echo "Starting deployment..."
 
@@ -40,6 +40,11 @@ jobs:
 
           echo "Stopping old process (if running)..."
           pkill -f "uvicorn app.main:app" || true
+          sleep 2
+          while pgrep -f "uvicorn app.main:app" >/dev/null; do
+              echo "Waiting for old process to terminate..."
+              sleep 1
+          done
 
           echo "Creating virtual environment if not exists..."
           if [ ! -d "venv" ]; then
