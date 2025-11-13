@@ -25,11 +25,11 @@ jobs:
     - name: Deploy to VM
       uses: appleboy/ssh-action@v1.0.3
       with:
-        host: course.prafdin.ru            # или ${{ secrets.PROXY }}
-        port: 2424                       # или ${{ secrets.SSH_PORT }}
-        username: vboxuser               # или ${{ secrets.USERNAME }}
+        host: course.prafdin.ru           # заменить на ${{ secrets.PROXY }} если нужно
+        port: 2424                      # заменить на ${{ secrets.SSH_PORT }} если нужно
+        username: vboxuser              # или ${{ secrets.USERNAME }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
-        debug: true                     # Включить debug логи в SSH для диагностики
+        debug: true
         script: |
           echo "Starting deployment..."
 
