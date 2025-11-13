@@ -15,7 +15,7 @@ jobs:
           # Параметры для SSH-подключения (из ваших секретов)
           host: course.prafdin.ru
           port: 2424
-          username: sasha
+          username: vboxuser
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           
           # Скрипт, который будет выполнен на вашем сервере
