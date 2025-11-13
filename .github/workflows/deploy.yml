@@ -25,11 +25,13 @@ jobs:
     - name: Deploy to VM
       uses: appleboy/ssh-action@v1.0.3
       with:
-        host: course.prafdin.ru           # заменить на ${{ secrets.PROXY }} если нужно
-        port: 2424                      # заменить на ${{ secrets.SSH_PORT }} если нужно
-        username: vboxuser              # или ${{ secrets.USERNAME }}
+        host: course.prafdin.ru
+        port: 2424
+        username: vboxuser
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         debug: true
+        timeout: 120s                  # Увеличиваем таймаут до 2 минут
+        command_timeout: 60s           # Таймаут для каждой команды
         script: |
           echo "Starting deployment..."
 
@@ -40,11 +42,21 @@ jobs:
 
           echo "Stopping old process (if running)..."
           pkill -f "uvicorn app.main:app" || true
-          sleep 2
-          while pgrep -f "uvicorn app.main:app" >/dev/null; do
+
+          # Ограничиваем цикл ожидания максимум 10 секундами
+          WAIT_COUNT=0
+          while pgrep -f "uvicorn app.main:app" >/dev/null && [ $WAIT_COUNT -lt 10 ]; do
               echo "Waiting for old process to terminate..."
               sleep 1
+              WAIT_COUNT=$((WAIT_COUNT + 1))
           done
+
+          # Принудительно убиваем, если процесс всё ещё работает
+          if pgrep -f "uvicorn app.main:app" >/dev/null; then
+              echo "Force killing the process..."
+              pkill -9 -f "uvicorn app.main:app" || true
+              sleep 1
+          fi
 
           echo "Creating virtual environment if not exists..."
           if [ ! -d "venv" ]; then
@@ -60,6 +72,8 @@ jobs:
 
           echo "Starting application..."
           nohup python -m uvicorn app.main:app --host 0.0.0.0 --port 8181 > app.log 2>&1 &
+
+          sleep 2
 
           echo "Deployment finished successfully!"
           echo "App should be available at http://app.volkov.course.prafdin.ru"
