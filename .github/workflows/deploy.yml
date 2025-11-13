@@ -34,25 +34,17 @@ jobs:
         timeout: 120s                    
         command_timeout: 60s              
         script: |
-          echo "Starting deployment..."
-
           cd /home/vboxuser/catty-reminders-app
-
-          echo "Pulling latest code from repository..."
           git pull origin lab2 || true    
-
-          echo "Stopping old process (if running)..."
           set +e                        
           pkill -f "uvicorn app.main:app"
           set -e                      
-
           WAIT_COUNT=0
           while pgrep -f "uvicorn app.main:app" >/dev/null && [ $WAIT_COUNT -lt 10 ]; do
               echo "Waiting for old process to terminate..."
               sleep 1
               WAIT_COUNT=$((WAIT_COUNT + 1))
           done
-
           set +e
           if pgrep -f "uvicorn app.main:app" >/dev/null; then
               echo "Force killing the process..."
@@ -60,23 +52,12 @@ jobs:
               sleep 1
           fi
           set -e
-
-          echo "Creating virtual environment if not exists..."
           if [ ! -d "venv" ]; then
             python3 -m venv venv
           fi
-
-          echo "Activating virtual environment..."
           source venv/bin/activate
-
-          echo "Upgrading pip and installing dependencies..."
           pip install --upgrade pip
           pip install -r requirements.txt
-
-          echo "Starting application..."
           nohup python -m uvicorn app.main:app --host 0.0.0.0 --port 8181 > app.log 2>&1 &
-
           sleep 2
 
-          echo "Deployment finished successfully!"
-          echo "App should be available at http://app.volkov.course.prafdin.ru"
