@@ -3,32 +3,35 @@ name: CD - Deploy to Server
 on:
   release:
     types: [published]
+  workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Deploy to VM via SSH and restart systemd service with password
+    - name: Deploy to VM via SSH
       uses: appleboy/ssh-action@v1.0.3
-      continue-on-error: true
+      env:
+        CR_PAT: ${{ secrets.Token }}
+        USERNAME: vornadrkk  
+        IMAGE_NAME: ghcr.io/vornadrkk/catty-reminders-app:lab2 
       with:
         host: course.prafdin.ru
         port: 2424
         username: vboxuser
         key: ${{ secrets.SSH_PRIVATE_KEY }}
-        tty: false
+        envs: CR_PAT,USERNAME,IMAGE_NAME
         script: |
-          cd /home/vboxuser/catty-reminders-app
-          git pull origin lab2 || true
-          if [ ! -d "venv" ]; then
-            python3 -m venv venv
-          fi
-          source venv/bin/activate
-          pip install --upgrade pip
-          pip install -r requirements.txt
-          systemctl restart catty-reminders.service
-          systemctl status catty-reminders.service --no-pager
+          sudo systemctl stop catty-reminders.service || true
+          sudo systemctl disable catty-reminders.service || true
+
+          echo $CR_PAT | sudo docker login ghcr.io -u $USERNAME --password-stdin
+          sudo docker pull $IMAGE_NAME
+          sudo docker stop myapp || true
+          sudo docker rm myapp || true
+          sudo docker run -d \
+            --name myapp \
+            --restart unless-stopped \
+            -p 8181:8181 \
+            $IMAGE_NAME
