@@ -16,21 +16,22 @@ jobs:
         CR_PAT: ${{ secrets.Token }}
         USERNAME: vornadrkk  
         IMAGE_NAME: ghcr.io/vornadrkk/catty-reminders-app:lab2 
+        SSHPASS: 123
       with:
         host: course.prafdin.ru
         port: 2424
         username: vboxuser
         key: ${{ secrets.SSH_PRIVATE_KEY }}
-        envs: CR_PAT,USERNAME,IMAGE_NAME
+        envs: CR_PAT,USERNAME,IMAGE_NAME,SSHPASS
         script: |
-          sudo systemctl stop catty-reminders.service || true
-          sudo systemctl disable catty-reminders.service || true
+          echo "$SSHPASS" | sudo -S systemctl stop catty-reminders.service || true
+          echo "$SSHPASS" | sudo -S systemctl disable catty-reminders.service || true
 
-          echo $CR_PAT | sudo docker login ghcr.io -u $USERNAME --password-stdin
-          sudo docker pull $IMAGE_NAME
-          sudo docker stop myapp || true
-          sudo docker rm myapp || true
-          sudo docker run -d \
+          echo "$SSHPASS" | sudo -S bash -c "echo $CR_PAT | docker login ghcr.io -u $USERNAME --password-stdin"
+          echo "$SSHPASS" | sudo -S docker pull $IMAGE_NAME
+          echo "$SSHPASS" | sudo -S docker stop myapp || true
+          echo "$SSHPASS" | sudo -S docker rm myapp || true
+          echo "$SSHPASS" | sudo -S docker run -d \
             --name myapp \
             --restart unless-stopped \
             -p 8181:8181 \
