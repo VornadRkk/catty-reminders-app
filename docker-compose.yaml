@@ -1,0 +1,45 @@
+version: "3.8"
+
+services:
+  app:
+    build: .
+    container_name: catty-reminders-app
+    ports:
+      - "8181:8181"
+    depends_on:
+      - db
+    environment:
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: catty_reminders
+      DB_USER: root
+      DB_PASSWORD: catty_password
+      PYTHONUNBUFFERED: 1
+    restart: unless-stopped
+    networks:
+      - catty-network
+
+  db:
+    image: mysql:8.0
+    container_name: catty-reminders-db
+    environment:
+      MYSQL_ROOT_PASSWORD: catty_password
+      MYSQL_DATABASE: catty_reminders
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    restart: unless-stopped
+    networks:
+      - catty-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+volumes:
+  mysql_data:
+
+networks:
+  catty-network:
+    driver: bridge
