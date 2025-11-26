@@ -15,7 +15,7 @@ jobs:
         env:
           CR_PAT: ${{ secrets.Token }}
           USERNAME: vornadrkk
-          IMAGE_NAME: ghcr.io/vornadrkk/catty-reminders-app:lab2
+          IMAGE_NAME: ghcr.io/vornadrkk/catty-reminders-app:lab4
           SSHPASS: ${{ secrets.SSHPASS }}
         with:
           host: course.prafdin.ru
