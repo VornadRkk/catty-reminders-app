@@ -1,0 +1,39 @@
+name: CD - Deploy to Server with Docker Compose
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Deploy to VM via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          CR_PAT: ${{ secrets.Token }}
+          USERNAME: vornadrkk
+          IMAGE_NAME: ghcr.io/vornadrkk/catty-reminders-app:lab2
+          SSHPASS: ${{ secrets.SSH_PASSWORD }}
+        with:
+          host: course.prafdin.ru
+          port: 2424
+          username: vboxuser
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          envs: CR_PAT,USERNAME,IMAGE_NAME,SSHPASS
+          script: |
+            echo "$SSHPASS" | sudo -S bash -c "echo $CR_PAT | docker login ghcr.io -u $USERNAME --password-stdin"
+
+            echo "$SSHPASS" | sudo -S docker pull $IMAGE_NAME
+
+            cd /home/vboxuser/catty-reminders-app
+
+            echo "$SSHPASS" | sudo -S docker compose down || true
+
+            echo "$SSHPASS" | sudo -S docker compose up -d
+
+            echo "$SSHPASS" | sudo -S docker compose ps
