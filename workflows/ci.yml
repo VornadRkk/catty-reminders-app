@@ -1,0 +1,64 @@
+name: CI - Test and Build with Docker Compose
+
+on:
+  push:
+    branches: [ "**" ]
+  pull_request:
+    branches: [ "**" ]
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build docker-compose images
+        run: docker compose build
+
+      - name: Start services
+        run: docker compose up -d
+
+      - name: Wait for app to start
+        run: sleep 5
+
+      - name: Run unit tests
+        run: docker compose exec -T app pytest tests/test_unit.py -v
+
+      - name: Run API tests
+        run: docker compose exec -T app pytest tests/test_api.py -v
+
+      - name: Stop services
+        run: docker compose down
+
+      - name: Log in to the Container registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.Token }}
+
+      - name: Extract metadata for Docker
+        if: github.event_name != 'pull_request'
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=sha
+
+      - name: Re-tag and push Docker image
+        if: github.event_name != 'pull_request'
+        run: |
+          IMAGE_ID=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep "catty-reminders-app" | head -1)
+          echo "Tagging image: $IMAGE_ID"
+          docker tag $IMAGE_ID ${{ steps.meta.outputs.tags }}
+          docker push ${{ steps.meta.outputs.tags }}
