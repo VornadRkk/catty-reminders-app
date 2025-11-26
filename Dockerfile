@@ -1,11 +1,13 @@
-FROM python:3.12-slim
-
-RUN pip install --upgrade pip
+FROM python:3.10-slim
 
 WORKDIR /app
-COPY . .
+COPY requirements.txt .
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
 
-RUN pip install -r requirements.txt
+RUN playwright install chromium
+
+COPY . .
 
 EXPOSE 8181
 
