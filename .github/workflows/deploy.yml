@@ -10,6 +10,20 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Copy docker-compose.yml to VM
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: course.prafdin.ru
+          port: 2424
+          username: vboxuser
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "docker-compose.yml"
+          target: "/home/vboxuser/app/"
+          overwrite: true
+
       - name: Deploy to VM
         uses: appleboy/ssh-action@v1.0.3
         env:
@@ -24,7 +38,6 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           envs: CR_PAT,USERNAME,IMAGE_NAME,SSHPASS
           script: |
-            mkdir -p /home/vboxuser/app
             cd /home/vboxuser/app
             
             echo "$SSHPASS" | sudo -S bash -c "echo $CR_PAT | docker login ghcr.io -u $USERNAME --password-stdin"
