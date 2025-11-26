@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   app:
-    image: ghcr.io/vornadrkk/catty-reminders-app:lab2
+    image: ghcr.io/vornadrkk/catty-reminders-app:lab4
     container_name: catty-app
     ports:
       - "8181:8181"
