@@ -1,0 +1,49 @@
+name: CD - Deploy with Docker Compose
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/vm_key
+          chmod 600 ~/.ssh/vm_key
+          ssh-keyscan -p 2424 course.prafdin.ru >> ~/.ssh/known_hosts
+
+      - name: Copy docker-compose.yml to VM
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: course.prafdin.ru
+          port: 2424
+          username: vboxuser
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "docker-compose.yml"
+          target: "/home/vboxuser/app/"
+          overwrite: true
+
+      - name: Deploy with Docker Compose
+        run: |
+          ssh -i ~/.ssh/vm_key -p 2424 -o StrictHostKeyChecking=no -o ConnectTimeout=15 vboxuser@course.prafdin.ru "
+          cd /home/vboxuser/app
+
+          echo '${{ secrets.Token }}' | docker login ghcr.io -u vornadrkk --password-stdin
+
+          docker compose -f docker-compose.yml pull
+          docker compose -f docker-compose.yml down
+          docker compose -f docker-compose.yml up -d
+
+          docker image prune -f
+
+          echo 'Deployment completed'
+          docker compose -f docker-compose.yml ps
+          "
