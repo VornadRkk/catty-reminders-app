@@ -29,7 +29,7 @@ jobs:
           if [ -f requirements.txt ]; then
             pip install -r requirements.txt
           fi
-          pip install pytest pytest-asyncio httpx
+          pip install pytest pytest-asyncio httpx playwright
 
       - name: Run unit tests
         env:
@@ -40,7 +40,14 @@ jobs:
       - name: Start services with docker-compose
         run: |
           docker compose up -d
-          sleep 10
+          echo "Waiting for services to be ready..."
+          sleep 20
+
+      - name: Check service health
+        run: |
+          docker compose ps
+          docker compose logs app
+          docker compose logs db
 
       - name: Run API tests
         env:
@@ -51,7 +58,7 @@ jobs:
       - name: Stop services
         if: always()
         run: |
-          docker compose down
+          docker compose down -v
 
       - name: Log in to the Container registry
         if: github.event_name != 'pull_request'
