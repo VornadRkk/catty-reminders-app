@@ -1,4 +1,4 @@
-ame: CI/CD - Lab4 Docker Compose
+name: CI/CD - Lab4 Docker Compose
 
 on:
   push:
