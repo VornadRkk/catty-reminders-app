@@ -30,7 +30,7 @@ jobs:
             
             echo "$SSHPASS" | sudo -S docker pull $IMAGE_NAME
             echo "$SSHPASS" | sudo -S docker compose -f docker-compose.yml down --remove-orphans
-            echo "$SSHPASS" | sudo -S docker compose -f docker-compose.yml up -d
+            echo "$SSHPASS" | sudo -S docker compose -f docker-compose.yml up -d --pull always
             
             echo "$SSHPASS" | sudo -S docker image prune -f
             
