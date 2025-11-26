@@ -10,40 +10,29 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup SSH key
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/vm_key
-          chmod 600 ~/.ssh/vm_key
-          ssh-keyscan -p 2424 course.prafdin.ru >> ~/.ssh/known_hosts
-
-      - name: Copy docker-compose.yml to VM
-        uses: appleboy/scp-action@v0.1.7
+      - name: Deploy to VM
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          CR_PAT: ${{ secrets.Token }}
+          USERNAME: vornadrkk
+          IMAGE_NAME: ghcr.io/vornadrkk/catty-reminders-app:lab4
         with:
           host: course.prafdin.ru
           port: 2424
           username: vboxuser
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "docker-compose.yml"
-          target: "/home/vboxuser/app/"
-          overwrite: true
-
-      - name: Deploy with Docker Compose
-        run: |
-          ssh -i ~/.ssh/vm_key -p 2424 -o StrictHostKeyChecking=no -o ConnectTimeout=15 vboxuser@course.prafdin.ru "
-          cd /home/vboxuser/app
-
-          echo '${{ secrets.Token }}' | docker login ghcr.io -u vornadrkk --password-stdin
-
-          docker compose -f docker-compose.yml pull
-          docker compose -f docker-compose.yml down
-          docker compose -f docker-compose.yml up -d
-
-          docker image prune -f
-
-          echo 'Deployment completed'
-          docker compose -f docker-compose.yml ps
-          "
+          envs: CR_PAT,USERNAME,IMAGE_NAME
+          script: |
+            cd /home/vboxuser/app
+            
+            echo $CR_PAT | docker login ghcr.io -u $USERNAME --password-stdin
+            
+            docker pull $IMAGE_NAME
+            docker stop catty-app || true
+            docker rm catty-app || true
+            docker compose -f docker-compose.yml up -d
+            
+            docker image prune -f
+            
+            echo 'Deployment completed'
+            docker compose -f docker-compose.yml ps
