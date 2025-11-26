@@ -15,24 +15,26 @@ jobs:
         env:
           CR_PAT: ${{ secrets.Token }}
           USERNAME: vornadrkk
-          IMAGE_NAME: ghcr.io/vornadrkk/catty-reminders-app:lab4
+          IMAGE_NAME: ghcr.io/vornadrkk/catty-reminders-app:lab2
+          SSHPASS: ${{ secrets.SSHPASS }}
         with:
           host: course.prafdin.ru
           port: 2424
           username: vboxuser
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          envs: CR_PAT,USERNAME,IMAGE_NAME
+          envs: CR_PAT,USERNAME,IMAGE_NAME,SSHPASS
           script: |
+            mkdir -p /home/vboxuser/app
             cd /home/vboxuser/app
             
-            echo $CR_PAT | docker login ghcr.io -u $USERNAME --password-stdin
+            echo "$SSHPASS" | sudo -S bash -c "echo $CR_PAT | docker login ghcr.io -u $USERNAME --password-stdin"
             
-            docker pull $IMAGE_NAME
-            docker stop catty-app || true
-            docker rm catty-app || true
-            docker compose -f docker-compose.yml up -d
+            echo "$SSHPASS" | sudo -S docker pull $IMAGE_NAME
+            echo "$SSHPASS" | sudo -S docker stop catty-app || true
+            echo "$SSHPASS" | sudo -S docker rm catty-app || true
+            echo "$SSHPASS" | sudo -S docker compose -f docker-compose.yml up -d
             
-            docker image prune -f
+            echo "$SSHPASS" | sudo -S docker image prune -f
             
             echo 'Deployment completed'
-            docker compose -f docker-compose.yml ps
+            echo "$SSHPASS" | sudo -S docker compose -f docker-compose.yml ps
